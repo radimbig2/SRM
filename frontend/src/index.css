@@ -1,0 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Use dark color scheme globally */
+:root {
+  color-scheme: dark;
+}
+
+/* Box sizing rule ensures padding and border are included in the element's total width and height. */
+* {
+  box-sizing: border-box;
+}
