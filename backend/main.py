@@ -1,8 +1,11 @@
 
 
 from datetime import date
+from pathlib import Path
 from fastapi import FastAPI, Depends, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import select, func, or_
 
@@ -27,15 +30,26 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Recruiting CRM", version="1.1")
 
-# Configure CORS so that the React frontend running on localhost:5173
-# can communicate with this API during development.
+# Configure CORS so that the React frontend can communicate with this API
+# In production, allow all origins since frontend is served from the same domain
+import os
+is_production = os.getenv("RENDER") is not None
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=["*"] if is_production else [
+        "http://localhost:5173", "http://127.0.0.1:5173",
+        "http://localhost:15000", "http://127.0.0.1:15000"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Mount static files from frontend/dist
+FRONTEND_DIST = Path(__file__).parent.parent / "frontend" / "dist"
+if FRONTEND_DIST.exists():
+    app.mount("/assets", StaticFiles(directory=str(FRONTEND_DIST / "assets")), name="assets")
 
 
 # Dependency that provides a database session per request
@@ -459,3 +473,13 @@ def earnings_report(year: int, month: int, db: Session = Depends(get_db)):
         items.append(EarningsItem(**data))
 
     return EarningsReport(year=year, month=month, total=round(total, 2), items=items)
+
+
+# ------------------ Frontend Routes ------------------
+@app.get("/")
+def serve_frontend():
+    """Serve the main frontend application."""
+    index_file = FRONTEND_DIST / "index.html"
+    if index_file.exists():
+        return FileResponse(index_file)
+    return {"error": "Frontend not built"}
