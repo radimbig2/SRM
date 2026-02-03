@@ -6,7 +6,7 @@
  * FastAPI server. It centralizes the API base URL and response handling.
  */
 
-const API = "http://localhost:8000";
+const API = "http://localhost:15000";
 
 // Generic HTTP helper that wraps fetch with default headers and error handling.
 async function http<T>(path: string, options?: RequestInit): Promise<T> {
